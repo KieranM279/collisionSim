@@ -127,59 +127,106 @@ def updatePosition(pos,vel,delta_t):
 
      return(pos1)
 
+def borderCollisionDetection(x,y,vel_x,vel_y,r):
 
-def ccdBorder(particleID):
+     xmin = 0
+     xmax = parameters['GRID_SIZE']
+     ymin = 0
+     ymax = parameters['GRID_SIZE']
+
+     # West border collision
+     if x < (xmin + r):
+          print("Collided with west border wall")
+
+          # Correct the position
+          distance_over = r-x
+          x = r+distance_over
+          # Flip the velocity
+          vel_x = vel_x*-1
+
+
+
+     # East border collision
+     if x > (xmax-r):
+          print("Collided with east border wall")
+          
+          # Correct the position
+          distance_over = x-(xmax-r)
+          x = xmax-r-distance_over
+          # Flip the velocity
+          vel_x = vel_x*-1
+
+     # South border collision
+     if y < (ymin+r):
+          print("Collided with south border wall")
+
+          # Correct the position
+          distance_over = r-y
+          y = r+distance_over
+          # Flip the velocity
+          vel_y = vel_y*-1
      
-     # Identify the borders
-     borders = {'xmin':0,'xmax':parameters['GRID_SIZE'],
-                'ymin':0,'ymax':parameters['GRID_SIZE']}
-     # Identiy coordiante relevant to the border
-     relCoord = {'xmin':'px','xmax':'px',
-                 'ymin':'py','ymax':'py'}
+     # North border collision
+     if y > (ymax-r):
+          print("Collided with north border wall")
+
+          # Correct the position
+          distance_over = y-(ymax-r)
+          y = ymax-r-distance_over
+          # Flip the velocity
+          vel_y = vel_y*-1
      
-     # Loop through each border
-     for b in borders.keys():
-          
-          # Identify if a collision could happen in next frame
-          diff = abs(borders[b] - particle_dict[particleID][relCoord[b]])
-          
-          if diff > parameters['MAX_VELOCITY']:
-               continue
-          
-          else:
-               print(diff)
+
+     return(x,y,vel_x,vel_y)
 
 
 
-
-
-def updateParticles():
+def updateParticles(particle_ID):
      
      global particle_dict
+
      dt = 1/int(parameters['FPS'])
+     a = particle_dict[particle_ID]['a']
 
-     print(particle_dict)
-     # Loop through each particle
-     for i in particle_dict.keys():
 
-          # Update the x velocity
-          particle_dict[i]['vx'] = updateVelocity(vel = particle_dict[i]['vx'],
-                                                  acc = particle_dict[i]['a'],
-                                                  delta_t = dt)
-          # Update the y velocity
-          particle_dict[i]['vy'] = updateVelocity(vel = particle_dict[i]['vy'],
-                                                  acc = particle_dict[i]['a'],
-                                                  delta_t = dt)
-          
-          # Update the x position
-          particle_dict[i]['px'] = updatePosition(pos = particle_dict[i]['px'],
-                                                  vel = particle_dict[i]['vx'],
-                                                  delta_t = dt)
-          # Update the y position
-          particle_dict[i]['py'] = updatePosition(pos = particle_dict[i]['py'],
-                                                  vel = particle_dict[i]['vy'],
-                                                  delta_t = dt)
+     # Isolate the current velocities
+     vx0 = particle_dict[particle_ID]['vx']
+     vy0 = particle_dict[particle_ID]['vy']
+     # Isolate the current positions
+     px0 = particle_dict[particle_ID]['px']
+     py0 = particle_dict[particle_ID]['py']
+
+     # Update the velocities
+     vx1 = updateVelocity(vel = vx0,
+                          acc = a,
+                          delta_t = dt)
+     vy1 = updateVelocity(vel = vy0,
+                          acc = a,
+                          delta_t = dt)
+     # Update the positions
+     px1 = updatePosition(pos = px0,
+                          vel = vx1,
+                          delta_t = dt)
+     py1 = updatePosition(pos = py0,
+                          vel = vy1,
+                          delta_t = dt)
+     
+
+     # Insert collision detection and correction here
+     px1,py1,vx1,vy1 = borderCollisionDetection(x = px1,y = py1,
+                                                vel_x = vx1, vel_y = vy1,
+                                                r = particle_dict[particle_ID]['r'])
+
+     # Update the global dictionary
+     particle_dict[particle_ID]['vx'] = vx1
+     particle_dict[particle_ID]['vy'] = vy1
+     particle_dict[particle_ID]['px'] = px1
+     particle_dict[particle_ID]['py'] = py1
+     
+     
 
 
 print(particle_dict)
-ccdBorder(0)
+
+updateParticles(0)
+print(particle_dict)
