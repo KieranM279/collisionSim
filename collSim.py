@@ -9,6 +9,7 @@ Created on Mon Aug 12 17:09:58 2024
 import os
 os.chdir('/Users/kieran/Documents/collisionSim/')
 import random
+import pandas as pd
 
 # Function to read in the parameter
 def FindParameters(filename):
@@ -85,6 +86,7 @@ def randRadius():
      lower = parameters['RADII_RANGE'][0]
      upper = parameters['RADII_RANGE'][1]
      r = random.randint(lower,upper)
+     print(r)
      return(r)
 
 # Function to generate a population of particles
@@ -179,6 +181,32 @@ def borderCollisionDetection(x,y,vel_x,vel_y,r):
 
      return(x,y,vel_x,vel_y)
 
+def particleCollisionDetection(particle_ID1,particle_ID2):
+    
+    global particle_dict
+    collision_bool = False
+    
+    # Identify first particles coordinates
+    px1 = particle_dict[particle_ID1]['px']
+    py1 = particle_dict[particle_ID1]['py']
+    
+    # Identify second particles coordinates
+    px2 = particle_dict[particle_ID2]['px']
+    py2 = particle_dict[particle_ID2]['py']
+    
+    # Identify particles' radii
+    r1 = particle_dict[particle_ID1]['r']
+    r2 = particle_dict[particle_ID2]['r']
+    
+    # Calculate their distance squares
+    particle_dist_sq = ((px1-px2)**2) + ((py1-py2)**2)
+    
+    # Calculate the square of the minimum distance
+    min_dist_sq = (r1+r2)**2
+    
+    # Determine collision
+    if particle_dist_sq < min_dist_sq:
+        collision_bool = True
 
 
 def updateParticles(particle_ID):
@@ -216,17 +244,31 @@ def updateParticles(particle_ID):
      px1,py1,vx1,vy1 = borderCollisionDetection(x = px1,y = py1,
                                                 vel_x = vx1, vel_y = vy1,
                                                 r = particle_dict[particle_ID]['r'])
-
+     
+     # Particle collision detection
+     
+     
      # Update the global dictionary
      particle_dict[particle_ID]['vx'] = vx1
      particle_dict[particle_ID]['vy'] = vy1
      particle_dict[particle_ID]['px'] = px1
      particle_dict[particle_ID]['py'] = py1
      
+
+# Function to export a dictionary as a '.csv'
+def getArray(dictionary):
+    data = pd.DataFrame.from_dict(dictionary)
+    return(data.transpose())
+
+#getArray(temperature_data).to_csv('frames/' + 'raw_temperatures.csv')
+
+num_frames = parameters['FPS']*parameters['TIME']
+print(num_frames)
+
+for i in range(num_frames):
+     print(i)
+     updateParticles(0)
      
+     filename = (str(i)+'_frame_data.csv')
 
-
-print(particle_dict)
-
-updateParticles(0)
-print(particle_dict)
+     getArray(particle_dict).to_csv('output_data/' + filename)
