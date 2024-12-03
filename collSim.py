@@ -87,7 +87,7 @@ def randRadius():
      lower = parameters['RADII_RANGE'][0]
      upper = parameters['RADII_RANGE'][1]
      r = random.randint(lower,upper)
-     print(r)
+     #print(r)
      return(r)
 
 # Function to generate a population of particles
@@ -324,6 +324,8 @@ def detectCandidates():
 def updateParticles(particle_ID):
      
      global particle_dict
+     global potential_collisions
+     global resolved_this_frame
 
      dt = 1/int(parameters['FPS'])
      a = particle_dict[particle_ID]['a']
@@ -356,6 +358,7 @@ def updateParticles(particle_ID):
      px1,py1,vx1,vy1 = borderCollisionDetection(x = px1,y = py1,
                                                 vel_x = vx1, vel_y = vy1,
                                                 r = particle_dict[particle_ID]['r'])
+         
      
      # Update the global dictionary
      particle_dict[particle_ID]['vx'] = vx1
@@ -363,16 +366,41 @@ def updateParticles(particle_ID):
      particle_dict[particle_ID]['px'] = px1
      particle_dict[particle_ID]['py'] = py1
      
+     # Only do particle-particle collision if there are candidate particles
+     if particle_ID in potential_collisions.keys():
+         
+         # Add this particle to the list of resolved particles
+         # These will be skipped in future ture particle collision detection tests
+         resolved_this_frame.append(particle_ID)
+         
+         # Isolate the list of potentials
+         potentials = potential_collisions[particle_ID]
+         
+         # Loop through the candidate particles
+         for candidate in potentials:
+             # Skip those who have previously been resolved
+             if candidate in resolved_this_frame:
+                 continue
+             else:
+                 
+                 # If the particles are truly colliding, correct them
+                 if particleCollisionDetection(particle_ID,candidate):
+                     
+                     print("Particle-Particle collision!")
+                     
+                         
+             
+             
 
 # Function to export a dictionary as a '.csv'
 def getArray(dictionary):
     data = pd.DataFrame.from_dict(dictionary)
     return(data.transpose())
 
-#getArray(temperature_data).to_csv('frames/' + 'raw_temperatures.csv')
+
 
 num_frames = parameters['FPS']*parameters['TIME']
-#print(num_frames)
+
 
 for i in range(num_frames):
     
@@ -381,7 +409,6 @@ for i in range(num_frames):
      # Particle collision detection
      potential_collisions = detectCandidates()
      resolved_this_frame = list()
-     
      print(potential_collisions)
      
      for p in particle_dict.keys():
@@ -391,3 +418,19 @@ for i in range(num_frames):
      filename = (str(i)+'_frame_data.csv')
 
      getArray(particle_dict).to_csv('output_data/' + filename)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
