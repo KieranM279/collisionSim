@@ -10,6 +10,7 @@ import os
 os.chdir('/Users/kieran/Documents/collisionSim/')
 import random
 import pandas as pd
+import statistics
 
 # Function to read in the parameter
 def FindParameters(filename):
@@ -181,6 +182,7 @@ def borderCollisionDetection(x,y,vel_x,vel_y,r):
 
      return(x,y,vel_x,vel_y)
 
+# Funciton to detect if there is a collision between two particles
 def particleCollisionDetection(particle_ID1,particle_ID2):
     
     global particle_dict
@@ -207,6 +209,116 @@ def particleCollisionDetection(particle_ID1,particle_ID2):
     # Determine collision
     if particle_dist_sq < min_dist_sq:
         collision_bool = True
+        
+    return(collision_bool)
+
+
+# Function to extract one feature of a particle from the global dictionary
+def extractParticleFeature(feature):
+    
+    # Initialise rubbish
+    global particle_dict
+    feature_dict = {}
+    
+    # Sequentially add the feature to a 1D dictionary
+    for i in particle_dict.keys():
+        
+        feature_dict[i] = particle_dict[i][feature]
+    
+    return(feature_dict)
+
+# Function that determines if two ranges overlap in any way
+def detectOverlap(rangeA,rangeB):
+    
+    # I hate this
+    if ((rangeA[0] <= rangeB[1]) and (rangeB[0] <= rangeA[1])):
+        
+        overlap_bool = True
+    else:
+        overlap_bool = False
+        
+    return(overlap_bool)
+    
+
+
+#dict(sorted(people.items(), key=lambda item: item[1]))
+def makeRanges(df):
+    
+    # Import global data
+    global particle_dict
+    dictionary = {}
+    
+    # Loop through particles
+    for i in df.keys():
+        
+        # Calculate the upper and lower bounds of their positions
+        upper = df[i] + particle_dict[i]['r']
+        lower = df[i] - particle_dict[i]['r']
+        
+        # Collate into a dictionary
+        dictionary[i] = [lower,upper]
+    
+    return(dictionary)
+        
+
+# Function to detect candidates for true collision detection
+def detectCandidates():
+    
+    # Import the particle metadara into the function
+    global particle_dict
+    dictionary = {}
+    
+    # Get coordinates across each axis
+    x_coords = extractParticleFeature(feature = 'px')
+    y_coords = extractParticleFeature(feature = 'py')
+    
+    # Calculate variance across each axis
+    x_var = statistics.variance(list(x_coords.values()))
+    y_var = statistics.variance(list(y_coords.values()))
+    
+    # Decide which axis to use
+    if x_var >= y_var:
+        data = x_coords
+        axis = 'px'
+    else:
+        data = y_coords
+        axis = 'py'
+    
+    # Order the particles in the dictionary by their axis coordinate
+    data = dict(sorted(data.items(), key=lambda item: item[1]))
+    
+    # Add in their intervals along the axis
+    range_data = makeRanges(df = data)
+    
+    # Loop through the particles
+    for i in data.keys():
+        
+        # Save identify candiate collisons
+        
+        # Isolate particle of interest's full range
+        range_i = range_data[i]
+        
+        # Loop through potential candidates
+        for j in range_data.keys():
+            
+            # Skip if it is the same particle
+            if i == j:
+                continue
+            
+            # Isolate the potential candidate'f full range
+            range_j = range_data[j]
+            
+            # If there is overlap of the ranges
+            if detectOverlap(range_i,range_j):
+                
+                # Add the identity candidaite to a list
+                # Declare list if necessary
+                if i not in dictionary.keys():
+                    dictionary[i] = [j]
+                else:
+                    dictionary[i].append(j)
+    return(dictionary)
+            
 
 
 def updateParticles(particle_ID):
@@ -245,9 +357,6 @@ def updateParticles(particle_ID):
                                                 vel_x = vx1, vel_y = vy1,
                                                 r = particle_dict[particle_ID]['r'])
      
-     # Particle collision detection
-     
-     
      # Update the global dictionary
      particle_dict[particle_ID]['vx'] = vx1
      particle_dict[particle_ID]['vy'] = vy1
@@ -263,11 +372,21 @@ def getArray(dictionary):
 #getArray(temperature_data).to_csv('frames/' + 'raw_temperatures.csv')
 
 num_frames = parameters['FPS']*parameters['TIME']
-print(num_frames)
+#print(num_frames)
 
 for i in range(num_frames):
+    
      print(i)
-     updateParticles(0)
+     
+     # Particle collision detection
+     potential_collisions = detectCandidates()
+     resolved_this_frame = list()
+     
+     print(potential_collisions)
+     
+     for p in particle_dict.keys():
+         
+         updateParticles(p)
      
      filename = (str(i)+'_frame_data.csv')
 

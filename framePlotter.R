@@ -2,12 +2,12 @@ setwd('~/Documents/collisionSim/')
 
 library('ggplot2')
 
-NUM_PARTICLES <- 1
+NUM_PARTICLES <- 10
 GRID_SIZE <- 100
 FPS <- 60
 TIME <- 5
 MAX_VELOCITY <- 5
-RADII_RANGE <- c(1,1)
+RADII_RANGE <- c(1,3)
 RUNTIME <- 10
 
 
